@@ -458,6 +458,12 @@ int GridMap::get_cell_item_orientation(const Vector3i &p_position) const {
 	return cell_map[key].rot;
 }
 
+/**
+ * AI: _ortho_bases is a static constant array of 24 Basis objects, each representing a unique
+ * orthogonal basis (rotation matrix) in 3D space.
+ * This array is typically used to enumerate all possible axis-aligned orientations,
+ * such as for cube face rotations or discrete symmetry operations.
+ */
 static const Basis _ortho_bases[24] = {
 	Basis(1, 0, 0, 0, 1, 0, 0, 0, 1),
 	Basis(0, -1, 0, 1, 0, 0, 0, 0, 1),
@@ -527,6 +533,9 @@ int GridMap::get_orthogonal_index_from_basis(const Basis &p_basis) const {
 	return 0;
 }
 
+/**
+ * Chunk IndexKey into OctantKeys of size octant_size
+ */
 GridMap::OctantKey GridMap::get_octant_key_from_index_key(const IndexKey &p_index_key) const {
 	const int x = p_index_key.x > 0 ? p_index_key.x / octant_size : (p_index_key.x - (octant_size - 1)) / octant_size;
 	const int y = p_index_key.y > 0 ? p_index_key.y / octant_size : (p_index_key.y - (octant_size - 1)) / octant_size;
@@ -1339,6 +1348,10 @@ Array GridMap::get_meshes() const {
 	return meshes;
 }
 
+/**
+ * Calculate offset from position for each cell
+ * Either the center of each cell, or the corner (if center_? is true)
+ */
 Vector3 GridMap::_get_offset() const {
 	return Vector3(
 			cell_size.x * 0.5 * int(center_x),
@@ -1361,10 +1374,17 @@ void GridMap::make_baked_meshes(bool p_gen_lightmap_uv, float p_lightmap_uv_texe
 		return;
 	}
 
-	//generate
+	/**
+	 * OctantKey => (Material => SurfaceTool)
+	 * where SurfaceTool is a mesh factory
+	 *
+	 * Group SurfaceTools by Material for each octant
+	 */
 	HashMap<OctantKey, HashMap<Ref<Material>, Ref<SurfaceTool>>, OctantKey> surface_map;
 
+	// cell_map is a map from a spatial key to a cell (cell id e.g. MeshLibrary index plus rot and layer )
 	for (KeyValue<IndexKey, Cell> &E : cell_map) {
+		// IndexKey is a spatial key of (x,y,z)|u64
 		IndexKey key = E.key;
 
 		int item = E.value.item;
@@ -1377,8 +1397,9 @@ void GridMap::make_baked_meshes(bool p_gen_lightmap_uv, float p_lightmap_uv_texe
 			continue;
 		}
 
+		// Extract vector for cell from key
 		Vector3 cellpos = Vector3(key.x, key.y, key.z);
-		Vector3 ofs = _get_offset();
+		Vector3 ofs = _get_offset(); // either middle or corner
 
 		Transform3D xform;
 
@@ -1386,15 +1407,26 @@ void GridMap::make_baked_meshes(bool p_gen_lightmap_uv, float p_lightmap_uv_texe
 		xform.set_origin(cellpos * cell_size + ofs);
 		xform.basis.scale(Vector3(cell_scale, cell_scale, cell_scale));
 
+		// What octant (chunk) is this Cell going to be part of?
 		const OctantKey ok = get_octant_key_from_index_key(key);
 
+		// Add empty octant to set
 		if (!surface_map.has(ok)) {
 			surface_map[ok] = HashMap<Ref<Material>, Ref<SurfaceTool>>();
 		}
 
+		/***
+		 * For current OctantKey, groups SurfaceTools by their respective Material
+		 * This will hold all submeshes (surfaces) for all meshes grouped by the relevant Material
+		 */
 		HashMap<Ref<Material>, Ref<SurfaceTool>> &mat_map = surface_map[ok];
 
+		// Iterate over each renderable submesh (surface)
+		// Groups all submeshes for all meshes by Material
+		// Also allocates a new SurfaceTool per material and stores all submeshes inside it
 		for (int i = 0; i < mesh->get_surface_count(); i++) {
+
+			// All submeshes must be PRIMITIVE_TRIANGLES
 			if (mesh->surface_get_primitive_type(i) != Mesh::PRIMITIVE_TRIANGLES) {
 				continue;
 			}
@@ -1412,9 +1444,18 @@ void GridMap::make_baked_meshes(bool p_gen_lightmap_uv, float p_lightmap_uv_texe
 		}
 	}
 
+	// Iterate over each Octant (with a Material->SurfaceTool map)
+	// Note each SurfaceTool already holds all submeshes for that Material
+
+	// property baked_meshes then holds one BakedMesh per material per Octant
 	for (KeyValue<OctantKey, HashMap<Ref<Material>, Ref<SurfaceTool>>> &E : surface_map) {
+		// Create a new empty ArrayMesh
 		Ref<ArrayMesh> mesh;
 		mesh.instantiate();
+
+		// E.value is Material->SurfaceTool
+		// F.value is SurfaceTool
+		// mesh (ArrayMesh) now holds all baked submeshes for that material
 		for (KeyValue<Ref<Material>, Ref<SurfaceTool>> &F : E.value) {
 			F.value->commit(mesh);
 		}
@@ -1435,6 +1476,8 @@ void GridMap::make_baked_meshes(bool p_gen_lightmap_uv, float p_lightmap_uv_texe
 		baked_meshes.push_back(bm);
 	}
 
+	// Update Cell items in gridmap (where Cell is index, rotation and layer indexed by IndexKey)
+	// baked_meshes remains (because recreating_octants=true)
 	_recreate_octant_data();
 }
 

@@ -48,6 +48,9 @@ class GridMap : public Node3D {
 		MAP_DIRTY_INSTANCES = 2,
 	};
 
+	/**
+	 * hashable spatial key in 3D
+	 */
 	union IndexKey {
 		struct {
 			int16_t x;
@@ -86,6 +89,10 @@ class GridMap : public Node3D {
 	union Cell {
 		struct {
 			unsigned int item : 16;
+
+			/**
+			 * Index into _ortho_bases
+			 */
 			unsigned int rot : 5;
 			unsigned int layer : 8;
 		};
@@ -130,6 +137,9 @@ class GridMap : public Node3D {
 		HashMap<IndexKey, NavigationCell> navigation_cell_ids;
 	};
 
+	/**
+	 * A spatial hashable key representing an Octant (group of IndexKeys)
+	 */
 	union OctantKey {
 		struct {
 			int16_t x;
@@ -220,6 +230,9 @@ class GridMap : public Node3D {
 
 	Vector3 _get_offset() const;
 
+	/**
+	 * Just a Mesh and RID
+	 */
 	struct BakedMesh {
 		Ref<Mesh> mesh;
 		RID instance;

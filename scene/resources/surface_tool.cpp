@@ -709,6 +709,11 @@ Array SurfaceTool::commit_to_arrays() {
 	return a;
 }
 
+/**
+ * Bakes all data to p_existing
+ *
+ * @param p_existing allocates a new ArrayMesh if none exists and bakes into it
+ */
 Ref<ArrayMesh> SurfaceTool::commit(const Ref<ArrayMesh> &p_existing, uint64_t p_compress_flags) {
 	Ref<ArrayMesh> mesh;
 	if (p_existing.is_valid()) {
