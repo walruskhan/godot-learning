@@ -16,8 +16,11 @@ install-deps-arch:
 		libglvnd \
 		alsa-lib
 
-build-linux:
-	scons platform=linuxbsd dev_build=yes use_llvm=yes linker=lld
+build:
+	just make
+
+make:
+	scons dev_build=yes use_llvm=yes linker=lld
 
 run:
 	./bin/godot.linuxbsd.editor.dev.x86_64.llvm
