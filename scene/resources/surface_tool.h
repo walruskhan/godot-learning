@@ -34,6 +34,32 @@
 #include "scene/resources/mesh.h"
 #include "thirdparty/misc/mikktspace.h"
 
+/**
+ * https://docs.godotengine.org/en/stable/tutorials/3d/procedural_geometry/surfacetool.html
+ *
+ * holds an array of Vertex and int indices
+ * Each vertex contains:
+ * - Color data (r,g,b,a)
+ * - normal, binormal, tangent (Vector3)
+ * - uv, uv2 (Vector3)
+ * - custom Color data (r,g,b,a)
+ * - Vertex coords itself
+ *
+ * 	enum ArrayType {
+		ARRAY_VERTEX = 0, // RG32F (2D), RGB32F, RGBA16 (compressed)
+		ARRAY_NORMAL = 1, // RG16
+		ARRAY_TANGENT = 2, // BA16 (with normal) or A16 (with vertex, when compressed)
+		ARRAY_COLOR = 3, // RGBA8
+		ARRAY_CUSTOM1 = 7,
+		ARRAY_CUSTOM2 = 8,
+		ARRAY_CUSTOM3 = 9,
+		ARRAY_BONES = 10, // RGBA16UI (x2 if 8 weights)
+		ARRAY_WEIGHTS = 11, // RGBA16UNORM (x2 if 8 weights)
+		ARRAY_INDEX = 12, // 16 or 32 bits depending on length > 0xFFFF.
+		ARRAY_MAX = 13
+	};
+
+ */
 class SurfaceTool : public RefCounted {
 	GDCLASS(SurfaceTool, RefCounted);
 
