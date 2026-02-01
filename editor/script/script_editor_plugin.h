@@ -207,7 +207,7 @@ public:
 	virtual Ref<Resource> get_edited_resource() const = 0;
 	virtual Vector<String> get_functions() = 0;
 	virtual void set_edited_resource(const Ref<Resource> &p_res) = 0;
-	virtual void enable_editor(Control *p_shortcut_context = nullptr) = 0;
+	virtual void enable_editor() = 0;
 	virtual void reload_text() = 0;
 	virtual String get_name() = 0;
 	virtual Ref<Texture2D> get_theme_icon() = 0;
@@ -237,7 +237,6 @@ public:
 
 	virtual void set_tooltip_request_func(const Callable &p_toolip_callback) = 0;
 	virtual Control *get_edit_menu() = 0;
-	virtual void clear_edit_menu() = 0;
 	virtual void set_find_replace_bar(FindReplaceBar *p_bar) = 0;
 
 	virtual Control *get_base_editor() const = 0;
@@ -322,11 +321,11 @@ class ScriptEditor : public PanelContainer {
 
 	HBoxContainer *menu_hb = nullptr;
 	MenuButton *file_menu = nullptr;
-	MenuButton *edit_menu = nullptr;
 	MenuButton *script_search_menu = nullptr;
 	MenuButton *debug_menu = nullptr;
 	PopupMenu *context_menu = nullptr;
 	Timer *autosave_timer = nullptr;
+	LocalVector<Control *> editor_menus;
 
 	PopupMenu *recent_scripts = nullptr;
 	PopupMenu *theme_submenu = nullptr;
@@ -359,7 +358,11 @@ class ScriptEditor : public PanelContainer {
 
 	float zoom_factor = 1.0f;
 
-	Label *script_name_label = nullptr;
+	HBoxContainer *script_name_button_hbox = nullptr;
+	Control *script_name_button_left_spacer = nullptr;
+	Control *script_name_button_right_spacer = nullptr;
+	Button *script_name_button = nullptr;
+	int script_name_width = 0;
 
 	Button *script_back = nullptr;
 	Button *script_forward = nullptr;
@@ -516,6 +519,9 @@ class ScriptEditor : public PanelContainer {
 	void _script_list_clicked(int p_item, Vector2 p_local_mouse_pos, MouseButton p_mouse_button_index);
 	void _make_script_list_context_menu();
 
+	void _calculate_script_name_button_size();
+	void _calculate_script_name_button_ratio();
+
 	void _help_search(const String &p_text);
 
 	void _history_forward();
@@ -598,6 +604,8 @@ public:
 
 	void set_scene_root_script(Ref<Script> p_script);
 	Vector<Ref<Script>> get_open_scripts() const;
+
+	ScriptEditorBase *get_current_editor() const { return _get_current_editor(); }
 
 	bool script_goto_method(Ref<Script> p_script, const String &p_method);
 
